@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="经典反相 Buck-Boost 电路交互动画：ON、OFF 充电、OFF 放电，显示所有闭合电流路径。">
+  <title>Buck-Boost 反相升降压｜电流流动交互动画</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --background:#f2f6fb;
+      --paper:#fff;
+      --text:#203047;
+      --muted:#697b91;
+      --edge:#dbe3ee;
+      --wire:#52647d;
+      --teal:#078e96;
+      --purple:#795bd4;
+      --orange:#e58c21;
+      --green:#169567;
+      --rose:#d45e52;
+    }
+    * {box-sizing:border-box}
+    body {
+      font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+      margin:0;
+      padding:20px;
+      color:var(--text);
+      background:var(--background);
+    }
+    main {max-width:1180px;margin:0 auto}
+    h1 {font-size:clamp(19px,2.6vw,27px);margin:0 0 7px}
+    .subtitle {color:var(--muted);font-size:13px;margin:0 0 18px;line-height:1.65}
+    .toolbar {display:flex;flex-wrap:wrap;gap:9px;margin:0 0 12px}
+    button {
+      padding:11px 15px;
+      cursor:pointer;
+      border:1px solid #cfd9e5;
+      border-radius:10px;
+      color:var(--text);
+      font-family:inherit;
+      font-size:14px;
+      font-weight:650;
+      background:#fff;
+      transition:background-color .12s ease,box-shadow .12s ease;
+    }
+    button:hover {box-shadow:0 1px 7px #23374b20}
+    button:focus-visible {outline:3px solid #65b7bd;outline-offset:2px}
+    button.active {border-color:var(--teal);background:var(--teal);color:#fff}
+    .panel {background:var(--paper);border:1px solid var(--edge);border-radius:16px;overflow:hidden;box-shadow:0 5px 22px #1c38500b}
+    .drawing {overflow-x:auto;overflow-y:hidden}
+    svg {display:block;width:100%;height:auto;min-width:630px}
+    .wire {stroke:var(--wire);stroke-width:3.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .label {fill:var(--text);font-size:17px;font-weight:700}
+    .minor {fill:var(--muted);font-size:14px}
+    .particle {stroke:#fff;stroke-width:1;filter:drop-shadow(0 0 2px #ffffffb0)}
+    .legend {display:flex;gap:12px 22px;flex-wrap:wrap;border-top:1px solid var(--edge);padding:15px 18px;font-size:13px;line-height:1.55}
+    .legend span {display:inline-flex;gap:8px;align-items:center}
+    .swatch {width:12px;height:12px;border-radius:50%;flex:none}
+    .info {border:1px solid var(--edge);border-radius:12px;padding:13px 16px;margin:13px 0 0;background:var(--paper);font-size:14px;line-height:1.8}
+    .info strong {display:block;font-size:16px;margin-bottom:3px}
+    .info p {margin:0}
+    .note {font-size:12px;color:var(--muted);line-height:1.7;margin-top:11px}
+    @media(max-width:650px) {body{padding:12px}button{font-size:13px;padding:10px 12px}.toolbar{gap:7px}}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Buck-Boost 反相升降压｜全电流动画</h1>
+    <p class="subtitle">Vin = +12 V　L = 470 μH　C = 470 μF　R = 50 Ω　f = 20 kHz　D = 50%（理论 CCM 示例）</p>
+
+    <div class="toolbar" role="group" aria-label="动画控制">
+      <button type="button" id="auto" class="active">Ⅱ 暂停动画</button>
+      <button type="button" id="on">ON · 电感储能</button>
+      <button type="button" id="off-charge">OFF · 电容充电</button>
+      <button type="button" id="off-discharge">OFF · 电容放电</button>
+    </div>
+
+    <section class="panel">
+      <div class="drawing">
+        <svg viewBox="0 0 1050 540" role="img" aria-label="反相 Buck-Boost 的电路图：开关串联在输入端，电感由 X 点到地，二极管阴极 K 接 X，阳极 A 接负输出端，输出电容和负载并联。运动的彩色点代表对应状态下电流的实际方向。">
+          <defs>
+            <pattern id="grid" width="26" height="26" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#aec0d3" opacity=".17"/></pattern>
+          </defs>
+          <rect x="0" y="0" width="1050" height="540" fill="url(#grid)"/>
+          <text x="30" y="43" class="label" style="font-size:21px">经典反相 Buck-Boost</text>
+          <text x="30" y="67" class="minor">彩色光点表示传统电流方向（非电子运动方向）</text>
+
+          <!-- All permanent wires are drawn independently of the animated paths. -->
+          <g class="wire">
+            <path d="M125 205H230 M292 205H415 M415 205H540 M617 205H952"/>
+            <path d="M125 205V283 M125 345V440H952"/>
+            <path d="M415 205V283 M415 362V440"/>
+            <path d="M758 205V287 M758 316V440"/>
+            <path d="M952 205V290 M952 357V440"/>
+          </g>
+
+          <!-- Input voltage source -->
+          <circle cx="125" cy="314" r="31" fill="#fff" stroke="var(--wire)" stroke-width="3.3"/>
+          <path d="M116 302H134 M125 293V311 M116 328H134" stroke="var(--wire)" stroke-width="2.5" fill="none"/>
+          <text x="52" y="290" class="label">Vin</text><text x="43" y="316" class="minor">+12 V</text>
+
+          <!-- Ideal switch, switched by JS -->
+          <circle cx="230" cy="205" r="6" stroke="var(--wire)" stroke-width="3" fill="#fff"/>
+          <circle cx="292" cy="205" r="6" stroke="var(--wire)" stroke-width="3" fill="#fff"/>
+          <path id="switch-blade" d="M230 205L292 205" stroke="var(--teal)" stroke-width="5" stroke-linecap="round"/>
+          <text x="245" y="149" class="label">S1</text><text x="238" y="169" class="minor">PWM</text>
+
+          <!-- Inductor -->
+          <path d="M415 283 C397 283 397 303 415 303 C433 303 433 323 415 323 C397 323 397 343 415 343 C433 343 433 362 415 362"
+            fill="none" stroke="var(--wire)" stroke-width="4" stroke-linecap="round"/>
+          <text x="442" y="325" class="label">L1</text><text x="442" y="348" class="minor">470 μH</text>
+          <circle cx="415" cy="205" r="6" fill="var(--teal)"/>
+
+          <!-- Correct DIODE orientation: cathode BAR at LEFT, anode at RIGHT. -->
+          <!-- Symbol is bar |< (current from RIGHT to LEFT): arrow-head apex touches bar. -->
+          <path d="M550 179V231" stroke="var(--wire)" stroke-width="5.5"/>
+          <path d="M556 205L611 177V233Z" fill="#b9ddd7" stroke="var(--wire)" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M540 205H550 M611 205H617" class="wire"/>
+          <text x="566" y="148" class="label">D1</text>
+          <text x="532" y="169" class="minor">K</text>
+          <text x="610" y="169" class="minor">A</text>
+          <text x="552" y="259" class="minor" style="font-weight:750">iD ←</text>
+
+          <!-- Capacitor: negative at Vout(top), positive at GND(bottom). -->
+          <path d="M721 287H795 M721 316H795" stroke="var(--wire)" stroke-width="5.5" stroke-linecap="round"/>
+          <text x="702" y="290" style="font-size:24px;fill:var(--rose)">−</text>
+          <text x="701" y="339" style="font-size:24px;fill:var(--teal)">+</text>
+          <text x="790" y="345" class="label">C1</text><text x="790" y="369" class="minor">470 μF</text>
+          <text id="cap-direction" x="676" y="384" class="minor" style="font-size:15px;font-weight:750">iC ↓</text>
+
+          <!-- Load R: conventional current upward from GND to negative Vout. -->
+          <rect x="932" y="290" width="40" height="67" rx="4" fill="#fff" stroke="var(--wire)" stroke-width="3.3"/>
+          <text x="982" y="315" class="label">R1</text><text x="982" y="339" class="minor">50 Ω</text>
+          <text x="974" y="390" class="minor" style="font-size:15px;font-weight:750">iR ↑</text>
+          <text x="762" y="173" class="label" style="fill:var(--rose)">Vout (−)</text>
+
+          <g fill="var(--teal)">
+            <circle cx="758" cy="205" r="6"/><circle cx="952" cy="205" r="6"/>
+            <circle cx="758" cy="440" r="5"/><circle cx="952" cy="440" r="5"/>
+            <circle cx="415" cy="440" r="5"/>
+          </g>
+          <path d="M610 440V459 M593 459H627 M600 467H620 M605 475H615"
+            fill="none" stroke="var(--wire)" stroke-width="2.5" stroke-linecap="round"/>
+          <text x="641" y="470" class="minor">GND = 0 V</text>
+
+          <!-- Complete directed current loops. -->
+          <!-- ON: Vin -> switch -> inductor -> ground -> Vin -->
+          <path id="path-source" d="M125 205H415V440H125V205" fill="none" stroke="none"/>
+          <!-- Capacitor DISCHARGE: Vout -> C -> GND -> R -> Vout -->
+          <path id="path-cap-discharge" d="M758 205V440H952V205H758" fill="none" stroke="none"/>
+          <!-- OFF: GND -> load -> Vout -> D1 (right-to-left) -> X -> inductor -> GND -->
+          <path id="path-load" d="M415 440H952V205H415V440" fill="none" stroke="none"/>
+          <!-- Capacitor CHARGE: GND -> C -> Vout -> diode -> L -> GND -->
+          <path id="path-cap-charge" d="M415 440H758V205H415V440" fill="none" stroke="none"/>
+
+          <g id="flow-source"></g><g id="flow-discharge"></g><g id="flow-load"></g><g id="flow-charge"></g>
+          <text id="stage-text" x="28" y="509" class="label" style="font-size:18px;fill:var(--teal)">ON：电感储能，电容向负载放电</text>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--teal)"></i>输入 / 开关 / 电感</span>
+        <span><i class="swatch" style="background:var(--purple)"></i>电感 / 二极管 / 负载</span>
+        <span><i class="swatch" style="background:var(--orange)"></i>电容放电</span>
+        <span><i class="swatch" style="background:var(--green)"></i>电容充电</span>
+      </div>
+    </section>
+
+    <section class="info" aria-live="polite">
+      <strong id="stage-heading">ON：电感储能，电容放电</strong>
+      <p id="explanation">输入电源经 S1 向电感储能；电容经负载组成独立放电回路。二极管截止。</p>
+    </section>
+    <p class="note">三种状态展示的是同一个周期内的电流路径。OFF 后期是否出现电容放电，取决于 iL 与 iLoad 的大小；这里按基准参数的理论 CCM 情况演示。粒子运动为了看清而放慢，并非实际 20 kHz 的播放速度。</p>
+  </main>
+  <script>
+    (() => {
+      const $=id=>document.getElementById(id);
+      if (!$('path-source')) return;
+      const names=[
+        {path:'path-source',group:'flow-source',color:'#078e96',count:16},
+        {path:'path-cap-discharge',group:'flow-discharge',color:'#e58c21',count:13},
+        {path:'path-load',group:'flow-load',color:'#795bd4',count:18},
+        {path:'path-cap-charge',group:'flow-charge',color:'#169567',count:12}
+      ];
+      const NS='http://www.w3.org/2000/svg';
+      for(const f of names){
+        f.route=$(f.path);
+        f.surface=$(f.group);
+        f.length=f.route.getTotalLength();
+        f.particles=[];
+        for(let i=0;i<f.count;i++){
+          const dot=document.createElementNS(NS,'circle');
+          dot.setAttribute('r','5.5');
+          dot.setAttribute('fill',f.color);
+          dot.setAttribute('class','particle');
+          f.surface.appendChild(dot);
+          f.particles.push(dot);
+        }
+      }
+      const states=[
+        {
+          label:'ON：电感储能，电容向负载放电',
+          detail:'青绿色：Vin → S1 → L1 → GND → Vin。橙色：Vout → C1 → GND → R1 → Vout。D1 截止，输入和负载是两个不同的闭合回路。',
+          visible:[true,true,false,false],
+          color:'#078e96'
+        },
+        {
+          label:'OFF 前段：电感放能，电容充电',
+          detail:'紫色：GND → R1 → Vout → D1 → L1 → GND。绿色：GND → C1 → Vout → D1 → L1 → GND。电感电流大于负载电流，电容充电。',
+          visible:[false,false,true,true],
+          color:'#795bd4'
+        },
+        {
+          label:'OFF 后段：电感放能，电容放电',
+          detail:'紫色：电感仍通过 D1 给负载供电。橙色：电容也经 R1 放电补充负载电流。此时电感电流小于负载电流，因此电容放电。',
+          visible:[false,true,true,false],
+          color:'#795bd4'
+        }
+      ];
+      let mode=0, auto=true, elapsed=0, prior=0, dist=0;
+      function display(){
+        $('stage-text').textContent=states[mode].label;
+        $('stage-text').setAttribute('fill',states[mode].color);
+        $('stage-heading').textContent=states[mode].label;
+        $('explanation').textContent=states[mode].detail;
+        $('switch-blade').setAttribute('d',mode===0?'M230 205L292 205':'M230 205L287 169');
+        $('switch-blade').setAttribute('stroke',mode===0?'#078e96':'#d45e52');
+        $('cap-direction').textContent=mode===1?'iC ↑':'iC ↓';
+        $('cap-direction').setAttribute('fill',mode===1?'#169567':'#e58c21');
+        names.forEach((f,i)=>f.surface.style.display=states[mode].visible[i]?'':'none');
+        ['on','off-charge','off-discharge'].forEach((k,i)=>$(k).classList.toggle('active',!auto && mode===i));
+        $('auto').classList.toggle('active',auto);
+        $('auto').textContent=auto?'Ⅱ 暂停动画':'▶ 自动演示';
+      }
+      function manual(i){mode=i;auto=false;elapsed=0;display()}
+      $('on').addEventListener('click',()=>manual(0));
+      $('off-charge').addEventListener('click',()=>manual(1));
+      $('off-discharge').addEventListener('click',()=>manual(2));
+      $('auto').addEventListener('click',()=>{
+        auto=!auto;elapsed=0;display();
+      });
+      function animate(now){
+        const dt=prior?Math.min((now-prior)/1000,.09):0;
+        prior=now;
+        if(auto){
+          elapsed+=dt;
+          // Slowed down, with ON ~50%, OFF-charge ~44%, OFF-discharge ~6%
+          // for the illustrative 12V/50ohm/470uH CCM example.
+          const sec=elapsed%10;
+          const next=sec<5?0:sec<9.39?1:2;
+          if(mode!==next){mode=next;display()}
+        }
+        dist+=dt*200;
+        for(const f of names){
+          if(f.surface.style.display==='none') continue;
+          f.particles.forEach((particle,index)=>{
+            const position=(dist+index*f.length/f.count)%f.length;
+            const p=f.route.getPointAtLength(position);
+            particle.setAttribute('cx',p.x);
+            particle.setAttribute('cy',p.y);
+          });
+        }
+        requestAnimationFrame(animate);
+      }
+      display();
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>
