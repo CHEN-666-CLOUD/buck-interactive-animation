@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="反激 Flyback 隔离开关电源四阶段交互式电流路径动画：ON 储能、OFF 放能初期、OFF 放能后期和 DCM 空档。">
+<title>反激 Flyback｜四阶段电流流向动画</title>
+<style>
+  :root {color-scheme:light;--ink:#243449;--muted:#62758b;--line:#dce5ef;--panel:#fff;--page:#f4f7fb;--primary:#c67a36;--secondary:#277fb5;--capacitor:#8a61af;--accent:#315f9c}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);color:var(--ink);font-family:Inter,"Segoe UI","Microsoft YaHei","Noto Sans CJK SC",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1260px;margin:26px auto;padding:0 20px 32px}
+  header{display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+  h1{font-size:25px;letter-spacing:-.4px;line-height:1.35;margin:0 0 8px;font-weight:760}
+  .sub{font-size:14px;color:var(--muted);line-height:1.6;margin:0}
+  .back{color:var(--accent);font-size:13px;text-decoration:none;font-weight:600}
+  .back:hover{text-decoration:underline}
+  .card{border:1px solid var(--line);background:#fff;border-radius:17px;padding:19px;box-shadow:0 8px 35px rgba(32,57,89,.035)}
+  .toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:17px}
+  .steps{display:flex;flex-wrap:wrap;gap:8px;flex:1 1 650px}
+  button{font-family:inherit;cursor:pointer}
+  .step{min-height:44px;flex:1 1 130px;white-space:nowrap;text-align:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;font-weight:650;color:var(--ink);transition:background .15s,border-color .15s,box-shadow .15s}
+  .step:hover,.action:hover{border-color:#9eafc5;background:#f8fbff}
+  .step[aria-pressed="true"]{border-color:#6a91c1;color:#244e85;background:#eaf2fd;box-shadow:inset 0 0 0 1px #a7c3e4}
+  .step small{color:#6f849c;font-weight:650;margin-right:5px}
+  .actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .action{min-height:44px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 15px;font-size:13px;font-weight:700;color:var(--ink)}
+  .speed{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .speed select{background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px 8px;font:inherit;color:var(--ink);min-height:44px}
+  :focus-visible{outline:3px solid #8eb7e4;outline-offset:2px}
+  .svg-scroll{overflow-x:auto;border:1px solid #e7edf3;border-radius:13px;background:linear-gradient(180deg,#fff 0%,#fcfdff 100%);touch-action:pan-x pan-y}
+  svg{display:block;width:100%;height:auto;min-width:760px}
+  .wire,.coil{fill:none;stroke:#29394a;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round}
+  .core{stroke:#9aaabb;stroke-width:4;stroke-linecap:round}
+  .part{fill:#fff;stroke:#29394a;stroke-width:2.8;stroke-linejoin:round}
+  .junction{fill:#29394a}
+  .label{font-size:18px;fill:#29394a;font-weight:700}
+  .minor{font-size:14px;fill:#61748a}
+  .zone{font-size:13px;letter-spacing:1px;fill:#75869a;font-weight:750}
+  .flow{stroke-width:5.3;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke-dasharray:10 17;animation:dashMove var(--pulse,1.2s) linear infinite;opacity:0;pointer-events:none}
+  .flow.visible{opacity:1}
+  .flow.primary{stroke:var(--primary)}
+  .flow.secondary{stroke:var(--secondary)}
+  .flow.capacitor{stroke:var(--capacitor)}
+  .indicator-bg{fill:#f3f6fa;stroke:#dae3ee;stroke-width:1}
+  .indicator{font-size:13px;fill:#324558;font-weight:700}
+  @keyframes dashMove{to{stroke-dashoffset:-27}}
+  .legend{display:flex;gap:10px 20px;flex-wrap:wrap;align-items:center;margin:14px 2px 16px;font-size:13px;color:var(--muted)}
+  .sample{display:inline-flex;gap:7px;align-items:center}
+  .sample i{display:inline-block;width:26px;height:4px;border-radius:2px}
+  .info{border-top:1px solid var(--line);padding-top:16px;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(225px,.8fr);gap:22px}
+  h2{font-size:17px;margin:0 0 8px}
+  .explain{font-size:14px;line-height:1.85;color:#4e6378;margin:0}
+  .reading{background:#f4f7fb;border-radius:11px;padding:13px 15px;font-size:13px;line-height:1.8}
+  .reading strong{font-size:13px;color:#34475b}
+  #reading-content{margin-top:5px;white-space:pre-line}
+  .hint{font-size:12px;color:#708197;margin-top:13px;line-height:1.8}
+  .nav{margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;font-size:13px}
+  .nav a{color:#315f9c;text-decoration:none}
+  .nav a:hover{text-decoration:underline}
+  @media(max-width:780px){.wrap{padding:0 12px 22px;margin-top:18px}.card{padding:12px}.info{grid-template-columns:1fr;gap:10px}h1{font-size:21px}.step{flex-basis:40%}}
+  @media(prefers-reduced-motion:reduce){.flow{animation:none;stroke-dasharray:11 8}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <div><h1>反激 Flyback · 四阶段电流动画</h1><p class="sub">隔离型基础拓扑 · 传统电流方向 · PGND 与 SGND 分离</p></div>
+    <a class="back" href="./index.html">返回 Buck 动画</a>
+  </header>
+  <section class="card" aria-label="反激电源交互动画">
+    <div class="toolbar">
+      <div class="steps" role="group" aria-label="选择电路工作阶段">
+        <button type="button" class="step" data-stage="0" aria-pressed="true"><small>01</small> ON · 储能</button>
+        <button type="button" class="step" data-stage="1" aria-pressed="false"><small>02</small> OFF · 放能初期</button>
+        <button type="button" class="step" data-stage="2" aria-pressed="false"><small>03</small> OFF · 放能后期</button>
+        <button type="button" class="step" data-stage="3" aria-pressed="false"><small>04</small> DCM · 空档</button>
+      </div>
+      <div class="actions">
+        <button class="action" type="button" id="play">▶ 连续播放</button>
+        <label class="speed">速度 <select id="speed"><option value="0.6">0.6×</option><option value="1" selected>1×</option><option value="1.6">1.6×</option><option value="2.4">2.4×</option></select></label>
+      </div>
+    </div>
+    <div class="svg-scroll" aria-label="静态电路元件与动态电流路径，手机可左右滑动">
+      <svg viewBox="0 0 1060 528" role="img" xmlns="http://www.w3.org/2000/svg" aria-label="左侧输入源、原边绕组及 N 沟道 MOSFET；右侧副边绕组、整流二极管、电容及负载。彩色动态虚线展示电流路径。">
+        <text x="246" y="45" text-anchor="middle" class="zone">PRIMARY · 原边</text>
+        <text x="810" y="45" text-anchor="middle" class="zone">SECONDARY · 副边</text>
+        <path d="M35 61 H465 M532 61 H1031" stroke="#e5ebf2" stroke-width="1.5"/>
+        <!-- Input voltage source / return -->
+        <path class="wire" d="M143 145 H415 V199 M143 145 V238 M143 302 V440 H415"/>
+        <circle cx="143" cy="270" r="32" class="part"/>
+        <path class="wire" d="M132 255 H154 M143 244 V266 M132 286 H154" stroke-width="2.4"/>
+        <text x="83" y="278" class="label">Vin</text>
+        <!-- Coupled inductor and opposite dot locations -->
+        <path class="coil" d="M415 199 C385 202 385 221 415 224 C385 227 385 246 415 249 C385 252 385 271 415 274 C385 277 385 296 415 299 C385 302 385 321 415 324 V347"/>
+        <path class="core" d="M472 196 V328 M485 196 V328"/>
+        <path class="coil" d="M570 199 C600 202 600 221 570 224 C600 227 600 246 570 249 C600 252 600 271 570 274 C600 277 600 296 570 299 C600 302 600 321 570 324 V440"/>
+        <path class="wire" d="M570 199 V145 H674"/>
+        <circle cx="399" cy="197" r="5.5" class="junction"/>
+        <circle cx="585" cy="327" r="5.5" class="junction"/>
+        <text x="490" y="172" class="label" text-anchor="middle">T1</text>
+        <!-- Enhancement-mode N MOSFET: G, D, S -->
+        <path class="wire" d="M415 347 V354 H402 V365 M402 375 V389 M402 400 V413 M402 423 V429 H415 V440"/>
+        <path class="wire" d="M380 360 V423 M287 388 H380"/>
+        <circle cx="280" cy="388" r="6" class="part"/>
+        <text x="278" y="365" text-anchor="middle" class="label">PWM</text>
+        <text x="435" y="385" class="label">Q1</text><text x="435" y="406" class="minor">NMOS</text>
+        <!-- Primary ground label is a reference, not shared with output -->
+        <path class="wire" d="M415 440 V471 M394 471 H436 M401 479 H429 M407 487 H423"/>
+        <text x="443" y="482" class="minor">PGND</text>
+        <!-- Secondary diode -->
+        <path class="wire" d="M674 145 H687 M723 145 H962"/>
+        <path d="M687 128 L687 162 L718 145 Z" class="part"/><path class="wire" d="M722 127 V163"/>
+        <text x="704" y="115" text-anchor="middle" class="label">D1</text>
+        <!-- Output capacitor -->
+        <path class="wire" d="M802 145 V258 M802 272 V440 M777 258 H827 M777 272 H827"/>
+        <text x="764" y="274" text-anchor="end" class="label">C1</text>
+        <!-- Output load -->
+        <path class="wire" d="M921 145 V249 M921 327 V440"/>
+        <rect x="909" y="249" width="24" height="78" class="part"/>
+        <text x="946" y="285" class="label">R1</text>
+        <!-- Secondary return -->
+        <path class="wire" d="M570 440 H921 M686 440 V471 M665 471 H707 M672 479 H700 M678 487 H694"/>
+        <text x="712" y="482" class="minor">SGND</text>
+        <circle cx="802" cy="145" r="4.5" class="junction"/><circle cx="921" cy="145" r="4.5" class="junction"/>
+        <circle cx="802" cy="440" r="4.5" class="junction"/><circle cx="921" cy="440" r="4.5" class="junction"/>
+        <text x="963" y="135" class="label">Vout+</text><text x="953" y="446" class="minor">Vout−</text>
+        <!-- Flow paths: animated dashes travel in traditional current direction -->
+        <!-- ON: voltage source positive to primary winding, Q1 channel and negative return -->
+        <path data-flow="primary" class="flow primary visible" d="M143 238 V145 H415 V199 C385 202 385 221 415 224 C385 227 385 246 415 249 C385 252 385 271 415 274 C385 277 385 296 415 299 C385 302 385 321 415 324 V347 V354 H402 V429 H415 V440 H143 V302"/>
+        <!-- OFF: secondary winding bottom-to-top then diode, load and secondary return -->
+        <path data-flow="secondary" class="flow secondary" d="M570 440 V324 C600 321 600 302 570 299 C600 296 600 277 570 274 C600 271 600 252 570 249 C600 246 600 227 570 224 C600 221 600 202 570 199 V145 H921 V249 V327 V440 H570"/>
+        <!-- OFF start: secondary diode output into capacitor TOP electrode -->
+        <path data-flow="charge-top" class="flow capacitor" d="M722 145 H802 V258"/>
+        <!-- OFF start: capacitor BOTTOM electrode returning to secondary winding -->
+        <path data-flow="charge-bottom" class="flow capacitor" d="M802 272 V440 H570"/>
+        <!-- ON and OFF late: capacitor supplies load, with no path crossing capacitor dielectric -->
+        <path data-flow="discharge" class="flow capacitor visible" d="M802 258 V145 H921 V249 V327 V440 H802 V272"/>
+        <g transform="translate(540 508)"><rect x="0" y="-17" width="216" height="29" rx="8" class="indicator-bg"/><circle id="state-dot" cx="14" cy="-2" r="4" fill="#c67a36"/><text id="switch-status" x="28" y="3" class="indicator">Q1：导通 · D1：截止</text></g>
+      </svg>
+    </div>
+    <div class="legend"><span class="sample"><i style="background:var(--primary)"></i> 原边输入电流</span><span class="sample"><i style="background:var(--secondary)"></i> 副边输出电流</span><span class="sample"><i style="background:var(--capacitor)"></i> 电容电流</span><span>彩色虚线按传统电流方向流动</span></div>
+    <div class="info" aria-live="polite">
+      <div><h2 id="phase-title">① MOSFET ON · 原边储能</h2><p id="phase-explanation" class="explain">原边：输入电流从 Vin 正极流向原边绕组，再经过 Q1 返回输入负极。副边：D1 截止，没有输出电流。输出：C1 单独给 R1 供电，Vout 略微下降。</p></div>
+      <div class="reading"><strong>本阶段电流状态</strong><div id="reading-content">iₚ 上升 · iₛ = 0\niC &lt; 0（电容放电）</div></div>
+    </div>
+    <div class="hint">这是 DCM 工作模式的四阶段示意图。OFF 放能后期仅表示 iₛ &lt; iₒ 时的情形；若进入 CCM，副边在下一次 ON 前不会出现零电流空档。图中电容两块极板之间不画导电电流。</div>
+  </section>
+  <nav class="nav" aria-label="其他基础拓扑动画"><a href="./index.html">Buck</a><a href="./boost.html">Boost</a><a href="./buck-boost.html">Buck-Boost</a></nav>
+</main>
+<script>
+(() => {
+  const root=document.querySelector('main.wrap');
+  const scenes=[
+    {name:'① MOSFET ON · 原边储能',body:'原边：输入电流从 Vin 正极流向原边绕组，再经过 Q1 返回输入负极。副边：D1 截止，没有输出电流。输出：C1 单独给 R1 供电，Vout 略微下降。',reading:'iₚ 上升 · iₛ = 0\niC < 0（电容放电）',paths:['primary','discharge'],status:'Q1：导通 · D1：截止',color:'#c67a36'},
+    {name:'② MOSFET OFF · 副边放能初期',body:'Q1 关断，绕组极性反转，D1 导通。副边电流通过 D1 向负载供电。当 iₛ > iₒ，多余电流流向 C1 上极板，电容充电。',reading:'iₚ（开关支路）= 0 · iₛ 下降\niC = iₛ − iₒ > 0（电容充电）',paths:['secondary','charge-top','charge-bottom'],status:'Q1：关断 · D1：导通',color:'#277fb5'},
+    {name:'③ MOSFET OFF · 副边放能后期',body:'D1 继续导通，副边电流进一步减小。当 0 < iₛ < iₒ 时，副边和 C1 同时给负载供电，此时 C1 已开始放电。',reading:'0 < iₛ < iₒ\niC = iₛ − iₒ < 0（电容放电）',paths:['secondary','discharge'],status:'Q1：关断 · D1：导通',color:'#277fb5'},
+    {name:'④ DCM · 零电流空档',body:'磁化能量释放完毕，D1 截止，原副边都不再向外传递能量。此时只有 C1 给 R1 供电，直到下一次 ON。',reading:'iₚ = 0 · iₛ = 0\niC = −iₒ（电容放电）',paths:['discharge'],status:'Q1：关断 · D1：截止',color:'#8a61af'}
+  ];
+  const stepButtons=[...root.querySelectorAll('button[data-stage]')];
+  const flows=[...root.querySelectorAll('path[data-flow]')];
+  const play=root.querySelector('#play'),speed=root.querySelector('#speed');
+  const title=root.querySelector('#phase-title'),description=root.querySelector('#phase-explanation');
+  const reading=root.querySelector('#reading-content'),status=root.querySelector('#switch-status'),dot=root.querySelector('#state-dot');
+  let current=0,clock=null;
+  function show(n){
+    current=(n+scenes.length)%scenes.length;
+    const scene=scenes[current];
+    for(const button of stepButtons)button.setAttribute('aria-pressed',String(Number(button.dataset.stage)===current));
+    for(const path of flows)path.classList.toggle('visible',scene.paths.includes(path.dataset.flow));
+    title.textContent=scene.name;
+    description.textContent=scene.body;
+    reading.textContent=scene.reading;
+    status.textContent=scene.status;
+    dot.setAttribute('fill',scene.color);
+  }
+  function pause(){if(clock!==null){clearInterval(clock);clock=null}play.textContent='▶ 连续播放';play.setAttribute('aria-label','连续播放四个阶段')}
+  function start(){pause();const scale=Number(speed.value)||1;clock=setInterval(()=>show(current+1),Math.max(450,Math.round(2500/scale)));play.textContent='Ⅱ 暂停';play.setAttribute('aria-label','暂停连续播放')}
+  for(const button of stepButtons)button.addEventListener('click',()=>{pause();show(Number(button.dataset.stage))});
+  play.addEventListener('click',()=>clock===null?start():pause());
+  speed.addEventListener('change',()=>{const scale=Number(speed.value)||1;root.style.setProperty('--pulse',`${1.2/scale}s`);if(clock!==null)start()});
+  root.addEventListener('keydown',(event)=>{
+    if(event.key!=='ArrowRight'&&event.key!=='ArrowLeft')return;
+    if(!stepButtons.includes(document.activeElement))return;
+    event.preventDefault();pause();show(current+(event.key==='ArrowRight'?1:-1));stepButtons[current].focus();
+  });
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)pause()});
+  show(0);
+})();
+</script>
+</body>
+</html>
