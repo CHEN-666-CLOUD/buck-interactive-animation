@@ -1,0 +1,184 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="半桥隔离型 DC-DC 变换器四阶段动态电流流向：Q1 导通、第一次死区、Q2 导通、第二次死区，以及 C3 的电流参考方向。">
+<title>半桥 DC-DC｜四阶段电流流向动画</title>
+<style>
+:root{color-scheme:light;--viz-text:#27313b;--viz-muted:#536170;--viz-border:#c9d2de;--viz-accent:#277cad;--viz-accent-bg:#e5f2ff;--viz-card:#ffffff}
+*{box-sizing:border-box}
+body{margin:0;background:#f2f6fb;color:var(--viz-text);font-family:Arial,"Microsoft YaHei",system-ui,sans-serif}
+.hb-page{max-width:1080px;margin:0 auto;padding:22px 20px 32px}
+.hb-page h1{font-size:clamp(21px,3vw,30px);line-height:1.3;margin:0 0 8px}
+.hb-page .lead{color:var(--viz-muted);font-size:14px;line-height:1.7;margin:0 0 20px}
+.hb-page .hint{font-size:12px;line-height:1.6;color:var(--viz-muted);margin:18px 0 0}
+@media(max-width:650px){.hb-page{padding:14px 11px 28px}.hb-page .lead{font-size:13px}}
+</style></head><body><main class="hb-page"><h1>半桥 DC-DC｜四阶段电流流向</h1><p class="lead">Q1 导通 → 第一次死区 → Q2 导通 → 第二次死区。点击选择阶段或自动轮播；橙色表示原边，蓝色表示副边，紫色表示 C3 固定向下的电流参考方向。</p><div id="hb-anim-root" class="w-full">
+ <div class="hb-controls" role="group" aria-label="选择工作阶段">
+  <button type="button" data-stage-btn="q1" aria-pressed="true">① Q1 导通</button>
+  <button type="button" data-stage-btn="dead1" aria-pressed="false">② 第一次死区</button>
+  <button type="button" data-stage-btn="q2" aria-pressed="false">③ Q2 导通</button>
+  <button type="button" data-stage-btn="dead2" aria-pressed="false">④ 第二次死区</button>
+  <button type="button" id="hb-cycle" aria-pressed="true">⏸ 暂停轮播</button>
+ </div>
+ <div class="hb-frame"><svg xmlns="http://www.w3.org/2000/svg" id="hb-animation-svg" viewBox="0 0 825 441" role="img" aria-label="半桥电路四阶段电流流向，橙色原边，蓝色副边，虚线沿传统电流方向流动">
+<defs>
+<style>
+  .trace{stroke:#383a3e;stroke-width:1.7;stroke-linecap:square;stroke-linejoin:round;fill:none}
+  .junction{fill:#252629;stroke:none}
+  .solid{fill:#292b2e;stroke:none}
+  .letter{fill:#383a3e;stroke:none;font-family:Arial,"Helvetica Neue",sans-serif;font-weight:400;font-size:20px}
+  .small-letter{font-size:19px}
+  .annot{font-size:18px}
+  .hot .trace{stroke:#0d7193;stroke-width:2.3}
+  .hot .junction,.hot .solid{fill:#0d7193}
+  .hot .letter{fill:#0d7193}
+
+ .resistor-box{fill:#d8dce5;stroke:#383a3e;stroke-width:1.7;}
+ .hot .resistor-box{stroke:#0d7193;fill:#d8dce5;}
+</style>
+</defs>
+<rect x="0" y="0" width="825" height="441" fill="#d8dce5"/>
+<!-- 1: C2、C1 和母线；对照原图左侧的元件编号顺序 -->
+<g data-part="cap" data-side="primary" data-name="输入分压电容 C1 / C2">
+ <path class="trace" d="M8 28 H214 M70 28 V88 M52 89 H88 M52 107 H88 M70 107 V265 M52 265 H88 M52 283 H88 M70 283 V380 M8 380 H214"/>
+ <circle class="junction" cx="70" cy="28" r="5.8"/><circle class="junction" cx="70" cy="176" r="5.8"/><circle class="junction" cx="70" cy="380" r="5.8"/>
+ <text class="letter" x="84" y="17">Vin</text>
+ <text class="letter" x="20" y="105">C1</text>
+ <text class="letter" x="20" y="279">C2</text>
+<text class="small-letter" x="84" y="166">A</text></g>
+<!-- 2: MOSFET 桥臂：上 Q2，下 Q1；与用户图相同的 NMOS 栅源形状及源极箭头 -->
+<g data-part="switch" data-side="primary" data-name="高侧 Q1 / 低侧 Q2">
+ <path class="trace" d="M214 28 V80 H191 M191 79 V116 M151 116 H181 V80 M191 116 H214 V278 M214 278 V309 H191 M191 308 V345 M151 345 H181 V309 M191 345 H214 V380"/>
+ <path class="trace" d="M191 97 H209 M191 327 H209"/>
+ <path class="solid" d="M193 97 L205 92.2 L205 101.8 Z M193 327 L205 322.2 L205 331.8 Z"/>
+ <text class="letter" x="223" y="104">Q1</text>
+ <text class="letter" x="223" y="337">Q2</text>
+ <circle class="junction" cx="214" cy="278" r="5.6"/><circle class="junction" cx="214" cy="380" r="5.6"/>
+ <path class="trace" d="M214 380 V412 M192 413 H235 L214 433 Z"/>
+<text class="small-letter" x="228" y="266">B</text></g>
+<!-- 3: 原边：A 点水平支路与 Q2/Q1 桥臂在 (214,176) 交叉不相连 -->
+<g data-part="transformer" data-side="primary" data-name="T1 变压器原边 Np">
+ <path class="trace" d="M70 176 H293 V190"/>
+ <path class="trace" d="M293 190 C306 189 306 210 293 210 C306 210 306 231 293 231 C306 231 306 254 293 254 C306 254 306 278 293 278"/>
+ <path class="trace" d="M293 278 H214 M312 189 V280 M318 189 V280"/>
+ <circle class="junction" cx="281" cy="201" r="4.4"/>
+ <text class="letter" x="259" y="234">N<tspan baseline-shift="sub" font-size="13">P</tspan></text>
+<text class="small-letter" x="304" y="147">T1</text></g>
+<!-- 4: S1/S2 连续中心抽头副边，共用点 y229；在 x443 的交叉处绝不打点 -->
+<g data-part="transformer" data-side="secondary" data-name="T1 副边中心抽头 Ns1 / Ns2">
+ <path class="trace" d="M351 155 H334 C325 155 332 173 342 175 C328 177 328 193 342 195 C329 198 329 213 342 216 C330 220 335 229 351 229"/>
+ <path class="trace" d="M351 229 C335 229 330 237 342 242 C329 247 329 263 342 266 C329 272 329 286 342 289 C330 294 330 303 351 303"/>
+ <path class="trace" d="M351 229 H758"/>
+ <circle class="junction" cx="353" cy="165" r="4.2"/><circle class="junction" cx="353" cy="241" r="4.2"/>
+ <text class="letter" x="351" y="202">N<tspan baseline-shift="sub" font-size="13">S1</tspan></text>
+ <text class="letter" x="351" y="279">N<tspan baseline-shift="sub" font-size="13">S2</tspan></text>
+ <circle class="junction" cx="528" cy="229" r="5.2"/>
+ <path class="trace" d="M528 229 V259 M509 260 H546 M516 268 H539 M524 276 H532"/>
+</g>
+<!-- 5: 二极管 D1/D2 和同一个整流节点 x443；穿过中心抽头水平线的竖线无电气连接 -->
+<g data-part="rectifier" data-side="secondary" data-name="D1 / D2 二极管整流">
+ <path class="trace" d="M351 155 H382 M400 155 H443 V303 H400 M351 303 H382"/>
+ <path class="solid" d="M382 143 L399 155 L382 167 Z M382 291 L399 303 L382 315 Z"/>
+ <path class="trace" d="M400 143 V167 M400 291 V315"/>
+ <circle class="junction" cx="443" cy="155" r="5.2"/>
+ <text class="letter" x="376" y="132">D1</text><text class="letter" x="376" y="340">D2</text>
+</g>
+<!-- 6: 输出电感 L 和电容 Co：与原图位置和 ground 一致 -->
+<g data-part="output" data-side="output" data-name="输出电感 L1 / 电容 C3">
+ <path class="trace" d="M443 155 H473"/>
+ <path class="trace" d="M473 155 C473 140 488 139 489 155 C489 140 504 139 505 155 C505 140 520 139 521 155 C521 140 536 139 537 155"/>
+ <path class="trace" d="M537 155 H758 M570 155 V186 M554 186 H587 M554 199 H587 M570 199 V229"/>
+ <circle class="junction" cx="570" cy="155" r="5.2"/><circle class="junction" cx="570" cy="229" r="5.2"/>
+ <text class="letter" x="501" y="132">L1</text><text class="letter" x="763" y="144">Vout</text>
+ <text class="letter" x="590" y="199">C3</text>
+</g>
+<g data-part="resistor" data-name="R1 负载电阻（与 C3 并联）"><path class="trace" d="M690 155 V181 M690 216 V229"/><rect x="680" y="181" width="20" height="35" rx="0" class="trace resistor-box"/><circle class="junction" cx="690" cy="155" r="5.2"/><circle class="junction" cx="690" cy="229" r="5.2"/><text class="letter" x="712" y="204">R1</text></g>
+<!-- Current indicators are idealized conventional-current power paths. -->
+<g class="hb-routes" data-stage="q1" aria-label="Q1导通阶段电流">
+ <path class="hb-current hb-current-primary" d="M70 176 V28 H214 V278 H293 V190 V176 H70 Z"/>
+ <path class="hb-current hb-current-secondary" d="M351 303 H443 V155 H690 V229 H351 V303"/>
+ <g class="hb-arrow-primary" aria-hidden="true"><path d="M141 28 h20 l-7 -6 m7 6 l-7 6 M214 187 v20 l-6 -7 m6 7 l6 -7 M274 278 h15 l-7 -6 m7 6 l-7 6 M70 124 v-17 l-6 7 m6 -7 l6 7"/></g>
+ <g class="hb-arrow-secondary" aria-hidden="true"><path d="M367 303 h18 l-7 -6 m7 6 l-7 6 M443 262 v-18 l-6 7 m6 -7 l6 7 M609 155 h20 l-7 -6 m7 6 l-7 6 M690 180 v20 l-6 -7 m6 7 l6 -7 M626 229 h-20 l7 -6 m-7 6 l7 6"/></g>
+</g>
+<g class="hb-routes" data-stage="dead1" aria-label="第一次死区副边续流" hidden>
+ <path class="hb-current hb-current-dead-upper" d="M351 229 V155 H690 V229 H351"/>
+ <path class="hb-current hb-current-dead-lower" d="M351 229 V303 H443 V155 H690 V229 H351"/>
+ <g class="hb-arrow-dead" aria-hidden="true"><path d="M351 190 v-17 l-6 7 m6 -7 l6 7 M351 263 v18 l-6 -7 m6 7 l6 -7 M377 155 h19 l-7 -6 m7 6 l-7 6 M379 303 h19 l-7 -6 m7 6 l-7 6 M607 155 h18 l-7 -6 m7 6 l-7 6 M690 178 v20 l-6 -7 m6 7 l6 -7"/></g>
+</g>
+<g class="hb-routes" data-stage="q2" aria-label="Q2导通阶段电流" hidden>
+ <path class="hb-current hb-current-primary" d="M70 176 H293 V278 H214 V380 H70 V176"/>
+ <path class="hb-current hb-current-secondary" d="M351 155 H690 V229 H351 V155"/>
+ <g class="hb-arrow-primary" aria-hidden="true"><path d="M145 176 h20 l-7 -6 m7 6 l-7 6 M293 216 v17 l-6 -7 m6 7 l6 -7 M214 319 v19 l-6 -7 m6 7 l6 -7 M140 380 h-20 l7 -6 m-7 6 l7 6 M70 331 v-18 l-6 7 m6 -7 l6 7"/></g>
+ <g class="hb-arrow-secondary" aria-hidden="true"><path d="M369 155 h18 l-7 -6 m7 6 l-7 6 M615 155 h20 l-7 -6 m7 6 l-7 6 M690 181 v19 l-6 -7 m6 7 l6 -7 M626 229 h-19 l7 -6 m-7 6 l7 6 M351 201 v-19 l-6 7 m6 -7 l6 7"/></g>
+</g>
+<g class="hb-routes" data-stage="dead2" aria-label="第二次死区副边续流" hidden>
+ <path class="hb-current hb-current-dead-upper" d="M351 229 V155 H690 V229 H351"/>
+ <path class="hb-current hb-current-dead-lower" d="M351 229 V303 H443 V155 H690 V229 H351"/>
+ <g class="hb-arrow-dead" aria-hidden="true"><path d="M351 190 v-17 l-6 7 m6 -7 l6 7 M351 263 v18 l-6 -7 m6 7 l6 -7 M377 155 h19 l-7 -6 m7 6 l-7 6 M379 303 h19 l-7 -6 m7 6 l-7 6 M607 155 h18 l-7 -6 m7 6 l-7 6 M690 178 v20 l-6 -7 m6 7 l6 -7"/></g>
+</g>
+<g class="hb-cap-current" aria-label="C3电流，固定正方向向下（充电方向示意）">
+  <path class="hb-current hb-current-cap" d="M570 156 V185 M570 200 V228"/>
+  <path class="hb-cap-arrow" d="M617 181 V213 M610 205 L617 213 L624 205"/>
+  <text class="hb-cap-label" x="608" y="173">iC3</text>
+</g>
+</svg></div>
+ <div class="hb-legend"><span><i class="hb-dot" style="background:#e6772b"></i>原边电流</span><span><i class="hb-dot" style="background:#0e84b9"></i>副边与负载电流</span><span><i class="hb-dot" style="background:#c049ab"></i>C3电流（固定向下）</span><span>移动圆点和箭头：传统电流方向</span></div>
+ <div class="hb-note" id="hb-stage-note" aria-live="polite"><strong>① Q1 导通</strong>（0–8 μs）｜Q1 ON，Q2 OFF。原边：Vin → Q1 → B → Np → A → C1 → Vin。副边：S2 → D2 → L1 → R1 → 中心抽头 → S2。L1 电流上升。</div>
+ <div class="hb-summary" id="hb-stage-summary">Vp ≈ −Vin/2，D2 导通、D1 截止；C3 电流箭头固定向下，仅表示所选正参考方向。</div>
+</div><style>
+#hb-anim-root{font-family:Arial,"Microsoft YaHei",sans-serif;max-width:100%;color:var(--viz-text,#27313b)}
+#hb-anim-root .hb-controls{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
+#hb-anim-root button{font:inherit;font-size:13px;cursor:pointer;border-radius:9px;padding:8px 12px;min-height:41px;border:1px solid var(--viz-border,#c9cdd3);color:var(--viz-text,#27313b);background:var(--viz-card,#f5f6f8)}
+#hb-anim-root button[aria-pressed=true]{border-color:var(--viz-accent,#277cad);background:var(--viz-accent-bg,#e5f2ff);font-weight:700}
+#hb-anim-root button:focus-visible{outline:2px solid var(--viz-accent,#277cad);outline-offset:2px}
+#hb-anim-root .hb-frame{overflow-x:auto;border:1px solid var(--viz-border,#b7bec8);border-radius:9px;background:#d8dce5}
+#hb-anim-root svg{display:block;min-width:640px;width:100%;height:auto}
+#hb-anim-root .hb-legend{display:flex;gap:15px;flex-wrap:wrap;margin:9px 0 6px;font-size:12px;color:var(--viz-muted,#536170)}
+#hb-anim-root .hb-dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;margin-right:5px}
+#hb-anim-root .hb-note{margin-top:8px;font-size:13px;line-height:1.7;color:var(--viz-text,#27313b)}
+#hb-anim-root .hb-summary{margin-top:8px;font-size:13px;line-height:1.6;color:var(--viz-muted,#536170)}
+#hb-anim-root .hb-routes[hidden]{display:none}
+#hb-anim-root .hb-current{fill:none;stroke-width:5.8;stroke-linecap:round;stroke-dasharray:1 14;animation:hb-electric-flow 1s linear infinite;pointer-events:none}
+#hb-anim-root .hb-current-primary{stroke:#e6772b;stroke-dashoffset:0}
+#hb-anim-root .hb-current-secondary{stroke:#0e84b9;stroke-dashoffset:0;animation-duration:0.9s}
+#hb-anim-root .hb-current-dead-upper{stroke:#1879b2;stroke-width:6;animation-duration:1.05s}
+#hb-anim-root .hb-current-cap{stroke:#c049ab;stroke-width:4.5;animation-duration:1s;stroke-dasharray:1 9}
+#hb-anim-root .hb-cap-arrow{fill:none;stroke:#a33a90;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+#hb-anim-root .hb-cap-label{fill:#8d2c80;font-size:17px;font-family:Arial,sans-serif;font-weight:bold}
+#hb-anim-root .hb-current-dead-lower{stroke:#43a3d8;stroke-width:6;animation-duration:1.25s}
+#hb-anim-root .hb-arrow-primary,#hb-anim-root .hb-arrow-secondary,#hb-anim-root .hb-arrow-dead{fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+#hb-anim-root .hb-arrow-primary{stroke:#dc6520}#hb-anim-root .hb-arrow-secondary{stroke:#047caa}#hb-anim-root .hb-arrow-dead{stroke:#1879b2}
+#hb-anim-root .hb-paused .hb-current{animation-play-state:paused}
+@keyframes hb-electric-flow{to{stroke-dashoffset:-45}}
+@media (prefers-reduced-motion:reduce){#hb-anim-root .hb-current{animation:none;stroke-dasharray:5 12}}
+</style><script>
+(() => {
+ const root=document.getElementById('hb-anim-root');
+ if(!root || root.dataset.ready) return;
+ root.dataset.ready='1';
+ const keys=['q1','dead1','q2','dead2'];
+ const desc={
+  q1:{title:'① Q1 导通（0–8 μs）',note:'Q1 ON，Q2 OFF。原边：Vin → Q1 → B → Np → A → C1 → Vin。副边：S2 → D2 → L1 → R1 → 中心抽头 → S2。L1 电流上升。',sub:'Vp≈−Vin/2；D2 导通、D1 截止。C3 粉色电流箭头固定向下（选定的参考方向）。'},
+  dead1:{title:'② 第一次死区（8–10 μs）',note:'Q1、Q2 均关断。输出电感 IL 维持原方向，通过 S1/D1 和 S2/D2 两个支路续流，再经 L1、R1 回到中心抽头。L1 电流下降。',sub:'Vp≈0；D1、D2 均参与续流，ID1+ID2≈IL。C3 粉色箭头是固定参考方向。'},
+  q2:{title:'③ Q2 导通（10–18 μs）',note:'Q1 OFF，Q2 ON。原边：A → Np → B → Q2 → 输入地 → C2 → A。副边：S1 → D1 → L1 → R1 → 中心抽头 → S1。L1 电流上升。',sub:'Vp≈+Vin/2；D1 导通、D2 截止。C3 粉色箭头是固定参考方向。'},
+  dead2:{title:'④ 第二次死区（18–20 μs）',note:'Q1、Q2 均关断。L1 的电流仍按原方向流动，D1、D2 都参与副边续流，输出电感电流下降。',sub:'Vp≈0；D1、D2 续流，ID1+ID2≈IL。C3 粉色箭头是固定参考方向。'}
+ };
+ let idx=0;
+ let auto=!window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+ let timer=null;
+ const buttons=[...root.querySelectorAll('[data-stage-btn]')];
+ const groups=[...root.querySelectorAll('[data-stage]')];
+ const cycle=root.querySelector('#hb-cycle');
+ function show(i){idx=((i%keys.length)+keys.length)%keys.length;const key=keys[idx];
+  groups.forEach(g=>{const active=g.dataset.stage===key;if(active){g.removeAttribute('hidden');g.style.display='inline';}else{g.setAttribute('hidden','');g.style.display='none';}});
+  buttons.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.stageBtn===key)));
+  const d=desc[key];root.querySelector('#hb-stage-note').textContent=d.title+'｜'+d.note;
+  root.querySelector('#hb-stage-summary').textContent=d.sub;
+ }
+ function sync(){if(timer!==null){clearInterval(timer);timer=null;} if(auto){timer=setInterval(()=>show(idx+1),4200);}cycle.setAttribute('aria-pressed',String(auto));cycle.textContent=auto?'⏸ 暂停轮播':'▶ 自动轮播';}
+ buttons.forEach(b=>b.addEventListener('click',()=>{show(keys.indexOf(b.dataset.stageBtn));auto=false;sync();}));
+ cycle.addEventListener('click',()=>{auto=!auto;sync();});
+ show(0);sync();
+ // Prevent hidden timers when the component is no longer connected.
+ const observer=new MutationObserver(()=>{if(!root.isConnected){if(timer!==null)clearInterval(timer);observer.disconnect();}});
+ observer.observe(root.parentNode,{childList:true});
+})();
+</script><p class="hint">注：这是理想化主功率回路示意动画。C3 紫色箭头固定向下，仅表示参考方向，不代表实际电流始终流向下方。</p></main></body></html>
