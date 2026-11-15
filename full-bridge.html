@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>全桥 DC-DC：四阶段手动切换电流路径动画（Q1-Q4、T1、D1-D2、L1、C1、R9）</title>
+<style>
+html,body{margin:0;background:#f7f8fa;color:#202b38;font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
+#fb-demo{box-sizing:border-box;max-width:900px;margin:14px auto;padding:14px;background:white;border:1px solid #e1e7ed;border-radius:16px}
+#fb-demo *{box-sizing:border-box}
+#fb-demo .fb-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+#fb-demo .fb-heading{font-size:16px;font-weight:700;color:#1e293b}
+#fb-demo .fb-phase{font-size:13px;color:#49556b;margin-top:3px}
+#fb-demo .fb-controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:9px}
+#fb-demo button{border:1px solid #c9d4df;background:#fff;color:#34435a;padding:8px 12px;border-radius:9px;cursor:pointer;font:inherit;font-size:13px;transition:background .15s,border-color .15s}
+#fb-demo button[aria-pressed="true"]{background:#e8f3ff;border-color:#377db3;color:#124a77;font-weight:700}
+#fb-demo button:hover{background:#f1f7fc}
+#fb-demo button:focus-visible{outline:2px solid #337aa9;outline-offset:2px}
+#fb-demo .fb-board{background:#fff;border:1px solid #dfe6ed;border-radius:12px;overflow:auto}
+#fb-demo svg{display:block;width:100%;height:auto;min-width:550px}
+#fb-demo .current{fill:none;stroke-width:5.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 13;animation:fb-moving 0.92s linear infinite;opacity:.94;filter:drop-shadow(0 0 1.1px currentColor)}
+#fb-demo .current--primary{stroke:#ef7b21;stroke-width:6.2;animation-duration:1s}
+#fb-demo .current--diode1{stroke:#1975d1;animation-duration:.90s}
+#fb-demo .current--diode2{stroke:#07a1c6;animation-duration:1.08s}
+#fb-demo .current--common{stroke:#245eea;stroke-width:6.5}
+#fb-demo .current--load{stroke:#20a36d;animation-duration:.95s}
+#fb-demo .current--capacitor{stroke:#b84ce1;stroke-width:6;animation-duration:1.1s}
+#fb-demo .cap-gap-glow{fill:none;stroke:#d48af0;stroke-width:5;stroke-dasharray:2 5;opacity:.75;animation:fb-pulse 1.05s ease-in-out infinite}
+#fb-demo .fb-node-labels{font-family:Arial,sans-serif;font-size:12px;font-weight:700;fill:#8a9aab;stroke:#fff;stroke-width:2;paint-order:stroke}
+#fb-demo .current[data-route="p14"],#fb-demo .current[data-route="p23"],#fb-demo .current[data-route="upper"],#fb-demo .current[data-route="lower"]{display:none}
+#fb-demo[data-stage="q14"] [data-route="p14"],#fb-demo[data-stage="q14"] [data-route="upper"],#fb-demo[data-stage="dead1"] [data-route="upper"],#fb-demo[data-stage="dead1"] [data-route="lower"],#fb-demo[data-stage="q23"] [data-route="p23"],#fb-demo[data-stage="q23"] [data-route="lower"],#fb-demo[data-stage="dead2"] [data-route="upper"],#fb-demo[data-stage="dead2"] [data-route="lower"]{display:block}
+#fb-demo .fb-legend{display:flex;flex-wrap:wrap;gap:7px 16px;margin:12px 0 4px;font-size:12px;color:#4f6074}
+#fb-demo .fb-key{display:inline-flex;align-items:center;gap:6px}
+#fb-demo .fb-key::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--mark)}
+#fb-demo .fb-explain{margin-top:11px;background:#f6f9fc;border-radius:10px;padding:12px 14px;line-height:1.65;font-size:13px;color:#344054}
+#fb-demo .fb-explain strong{color:#1d3854}
+#fb-demo .fb-sub{font-size:12px;color:#607086;margin-top:8px}
+#fb-demo .fb-readout{font-size:12px;color:#52657c;margin-top:7px}
+@keyframes fb-moving{from{stroke-dashoffset:0}to{stroke-dashoffset:-56}}
+@keyframes fb-pulse{0%,100%{opacity:.22}50%{opacity:.9}}
+@media (max-width:550px){#fb-demo{padding:8px}#fb-demo button{font-size:12px;padding:7px}}
+@media (prefers-reduced-motion: reduce){#fb-demo .current{animation:none;stroke-dasharray:5 11}#fb-demo .cap-gap-glow{animation:none}}
+</style>
+</head>
+<body>
+<div id="fb-demo" data-stage="q14">
+ <div class="fb-top"><div><div class="fb-heading">隔离型全桥 · 四阶段电流流向</div><div id="fb-phase" class="fb-phase">① Q1、Q4 导通 · 0–8 μs</div></div><div style="font-size:12px;color:#66758b">传统电流方向 · 50 kHz · CCM</div></div>
+ <div class="fb-controls" role="group" aria-label="选择全桥工作阶段">
+  <button type="button" data-stage-btn="q14" aria-pressed="true">① Q1/Q4 导通</button>
+  <button type="button" data-stage-btn="dead1" aria-pressed="false">② 第一次死区</button>
+  <button type="button" data-stage-btn="q23" aria-pressed="false">③ Q2/Q3 导通</button>
+  <button type="button" data-stage-btn="dead2" aria-pressed="false">④ 第二次死区</button>
+ </div>
+ <div class="fb-board"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 730 401" width="730" height="401" id="fb-circuit-svg" role="img" aria-label="全桥变换器：Q1-Q4、T1、D1-D2、L1、C1和并联负载R9">
+  <rect width="730" height="401" fill="#ffffff"/>
+  <defs>
+    <g id="fet" stroke="#080808" stroke-width="3.1" stroke-linecap="square" stroke-linejoin="miter" fill="none">
+      <!-- 以栅极引线左端为原点。参考图的 MOSFET 符号 -->
+      <path d="M0 50 H23 V0" />
+      <path d="M35 0 V17 M35 25 V37 M35 45 V57"/>
+      <path d="M35 8 H65 M35 45 H65"/>
+      <path d="M65 8 V21 M65 35 V45"/>
+      <path d="M35 31 H42"/>
+      <path d="M65 25 L39 32 L65 39 Z" fill="#080808" stroke="#080808" stroke-width="1"/>
+    </g>
+    <g id="dot" fill="#090909" stroke="none"><circle r="4.1" /></g>
+    <g id="diode" fill="none" stroke="#080808" stroke-width="3.05" stroke-linejoin="miter">
+      <path d="M0 0 L0 25 L22 12.5 Z" />
+      <path d="M22 -3 L22 29" />
+    </g>
+  </defs>
+  <!-- 原边电源正、负母线 -->
+  <g stroke="#090909" fill="none" stroke-width="3.15" stroke-linejoin="miter" stroke-linecap="square">
+    <path d="M23 51 H214 V93"/>
+    <path d="M23 377 H214 V331"/>
+    <path d="M111 51 V87 H81"/>
+    <path d="M111 124 V292 H81"/>
+    <path d="M111 331 V377"/>
+    <path d="M214 129 V292 H184"/>
+    <path d="M214 249 H277"/>
+    <path d="M214 331 V377"/>
+    <path d="M184 93 H214"/>
+    <path d="M111 171 H277"/>
+  </g>
+  <!-- 四个晶体管符号：Q1左上、Q3右上、Q2左下、Q4右下 -->
+  <use href="#fet" transform="translate(46 80)"/>
+  <use href="#fet" transform="translate(149 87)"/>
+  <use href="#fet" transform="translate(46 287)"/>
+  <use href="#fet" transform="translate(149 287)"/>
+  <!-- 原边：磁芯两道竖线与四个线圈半圆 -->
+  <g fill="none" stroke="#090909" stroke-width="3.05" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M277 171 C293 171 293 190 277 190 C293 190 293 210 277 210 C293 210 293 229 277 229 C293 229 293 249 277 249"/>
+    <path d="M295 179 V241 M302 179 V241" stroke-width="2.5"/>
+    <!-- 副边中心抽头，两侧 8 组线圈半圆 -->
+    <path d="M320 131 C299 131 299 151 320 151 C299 151 299 170 320 170 C299 170 299 190 320 190 C299 190 299 210 320 210 C299 210 299 230 320 230 C299 230 299 249 320 249 C299 249 299 269 320 269 C299 269 299 287 320 287"/>
+  </g>
+  <!-- 中心抽头端口与两个整流二极管 -->
+  <g fill="none" stroke="#090909" stroke-width="3.05" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M320 131 H346"/>
+    <path d="M368 131 H423"/>
+    <path d="M320 287 H346"/>
+    <path d="M368 287 H400 V131"/>
+    <path d="M320 210 H387 M413 210 H708"/>
+  </g>
+  <use href="#diode" transform="translate(346 118.5)"/>
+  <use href="#diode" transform="translate(346 274.5)"/>
+  <!-- 输出 LC 级 -->
+  <g fill="none" stroke="#090909" stroke-width="3.05" stroke-linecap="square" stroke-linejoin="round">
+    <path d="M400 131 H422"/>
+    <!-- 四个上拱半圆，对应电感 L -->
+    <path d="M422 131 C422 112 444 112 444 131 C444 112 466 112 466 131 C466 112 488 112 488 131 C488 112 510 112 510 131"/>
+    <path d="M510 131 H708"/>
+    <path d="M544 131 V162"/>
+    <path d="M527 162 H560 M527 176 H560" stroke-width="3.2"/>
+    <path d="M544 176 V210"/>
+    <!-- R9负载：电容C1右侧，并联在Vo和输出地之间 -->
+    <path d="M627 131 V153 L616 158 L638 164 L616 170 L638 176 L616 182 L638 188 L627 194 V210" stroke-width="3.1" />
+  </g>
+  <path d="M387 210 C387 191 413 191 413 210" fill="none" stroke="#fff" stroke-width="9"/>
+  <path d="M387 210 C387 191 413 191 413 210" fill="none" stroke="#090909" stroke-width="3.05"/>
+  <!-- junctions -->
+  <g fill="#0a0a0a">
+    <circle cx="111" cy="51" r="4.1"/>
+    <circle cx="111" cy="124" r="4.1"/>
+    <circle cx="214" cy="129" r="4.1"/>
+    <circle cx="111" cy="171" r="4.1"/>
+    <circle cx="214" cy="249" r="4.1"/>
+    <circle cx="111" cy="331" r="4.1"/>
+    <circle cx="214" cy="331" r="4.1"/>
+    <circle cx="111" cy="377" r="4.1"/>
+    <circle cx="400" cy="131" r="4.1"/>
+    <circle cx="544" cy="131" r="4.1"/>
+    <circle cx="627" cy="131" r="4.1"/>
+    <circle cx="544" cy="210" r="4.1"/>
+    <circle cx="627" cy="210" r="4.1"/>
+    <circle cx="277" cy="183" r="3.8"/>
+    <circle cx="311" cy="142" r="3.8"/>
+    <circle cx="311" cy="219" r="3.8"/>
+  </g>
+  <!-- 标签，字体使用经典衬线体，下标独立放置 -->
+  <g font-family="'Times New Roman', 'Liberation Serif', 'Tinos', serif" fill="#090909" font-weight="400">
+    <text x="28" y="111" font-size="25">Q<tspan font-size="17" baseline-shift="sub">1</tspan></text>
+    <text x="223" y="114" font-size="25">Q<tspan font-size="17" baseline-shift="sub">3</tspan></text>
+    <text x="29" y="318" font-size="25">Q<tspan font-size="17" baseline-shift="sub">2</tspan></text>
+    <text x="225" y="316" font-size="25">Q<tspan font-size="17" baseline-shift="sub">4</tspan></text>
+    <text x="343" y="107" font-size="26">D<tspan font-size="18" baseline-shift="sub">1</tspan></text>
+    <text x="344" y="327" font-size="26">D<tspan font-size="18" baseline-shift="sub">2</tspan></text>
+    <text x="458" y="107" font-size="26">L<tspan font-size="18" baseline-shift="sub">1</tspan></text>
+    <text x="566" y="176" font-size="25">C<tspan font-size="17" baseline-shift="sub">1</tspan></text>
+    <text x="644" y="176" font-size="25">R<tspan font-size="17" baseline-shift="sub">9</tspan></text>
+    <text x="282" y="116" font-size="22">T<tspan font-size="16" baseline-shift="sub">1</tspan></text>
+  </g>
+
+<!-- 高亮层：保持上方全部原图黑线，不修改器件和节点位号 -->
+<g id="fb-flow-overlay" pointer-events="none">
+<path class="current current--primary" data-route="p14" d="M23 51 H111 V171 H277 C293 171 293 190 277 190 C293 190 293 210 277 210 C293 210 293 229 277 229 C293 229 293 249 277 249 H214 V377 H23"/>
+<path class="current current--primary" data-route="p23" d="M23 51 H214 V249 H277 C293 249 293 229 277 229 C293 229 293 210 277 210 C293 210 293 190 277 190 C293 190 293 171 277 171 H111 V377 H23"/>
+<path class="current current--diode1" data-route="upper" d="M320 210 C299 210 299 190 320 190 C299 190 299 170 320 170 C299 170 299 151 320 151 C299 151 299 131 320 131 H400 V131"/>
+<path class="current current--diode2" data-route="lower" d="M320 210 C299 210 299 230 320 230 C299 230 299 249 320 249 C299 249 299 269 320 269 C299 269 299 287 320 287 H400 V131"/>
+<path class="current current--common" data-route="shared" d="M400 131 H422 C422 112 444 112 444 131 C444 112 466 112 466 131 C466 112 488 112 488 131 C488 112 510 112 510 131"/>
+<path class="current current--load" data-route="load" d="M510 131 H627 V153 L616 158 L638 164 L616 170 L638 176 L616 182 L638 188 L627 194 V210 H413 C413 191 387 191 387 210 H320"/>
+<path class="current current--capacitor" data-route="cap_in" d="M510 131 H544 V162"/>
+<path class="current current--capacitor" data-route="cap_out" d="M544 176 V210 H413 C413 191 387 191 387 210 H320"/>
+<path class="cap-gap-glow" d="M544 163 V175"/>
+</g>
+<g class="fb-node-labels" pointer-events="none">
+  <text x="119" y="155">A</text><text x="224" y="236">B</text>
+  <text x="328" y="122">U</text><text x="328" y="304">W</text>
+  <text x="325" y="207">O</text><text x="407" y="154">K</text>
+  <text x="680" y="120">V<tspan baseline-shift="sub" font-size="10">o</tspan></text>
+</g>
+</svg></div>
+ <div class="fb-legend"><span class="fb-key" style="--mark:#ef7b21">原边主功率电流</span><span class="fb-key" style="--mark:#1975d1">D1 支路</span><span class="fb-key" style="--mark:#07a1c6">D2 支路</span><span class="fb-key" style="--mark:#245eea">K→L1 公共电流</span><span class="fb-key" style="--mark:#20a36d">R9 负载</span><span class="fb-key" style="--mark:#b84ce1">C1 充电</span></div>
+ <div class="fb-explain"><strong id="fb-caption">① Q1、Q4 导通</strong><div id="fb-description">橙色：Vin 正端 → Q1 → A → 变压器原边 → B → Q4 → Vin 负端。蓝色：中心抽头 O → 上半副边 → D1 → K → L1；再分别流向 R9 与 C1，沿下方母线返回 O。</div><div id="fb-remark" class="fb-sub">Vp≈+5 V；D1 导通，D2 截止；L1 电流上升。C1 按要求始终显示充电。</div></div>
+ <div class="fb-readout">点击上方按钮手动选择工作阶段；阶段不会自动切换，所选阶段的电流箭头持续流动。原边正负端之间是外部输入电源（图中未画电源内部）；死区原边换流受寄生参数影响，不预设固定方向。紫色跨电容间隙的闪烁仅示意充电，并非导线贯穿电介质。</div>
+</div>
+<script>
+(function(){
+ const root=document.getElementById('fb-demo');if(!root||root.dataset.initialized)return;root.dataset.initialized='1';
+ const phases=[
+  {id:'q14',dur:8,title:'① Q1、Q4 导通 · 0–8 μs',note:'橙色原边：Vin 正端 → Q1 → A → 变压器原边 → B → Q4 → Vin 负端。副边：O → 上半绕组 → U → D1 → K → L1，随后分成 R9 负载支路和 C1 充电支路，两路经下母线返回 O。',remark:'Q1/Q4 ON，D1 导通，D2 截止；Vp≈+5 V，VL>0，L1 电流上升。'},
+  {id:'dead1',dur:2,title:'② 第一次死区 · 8–10 μs',note:'四只 MOSFET 均 OFF。蓝色 O → 上半绕组 → D1 → K；青色 O → 下半绕组 → D2 → K，两支在 K 汇合，经 L1 分别向 R9 与 C1 供给，再回到 O。',remark:'理想 CCM 续流：D1、D2 都有电流，ID1+ID2≈IL；Vp≈0，VL<0，L1 电流下降。'},
+  {id:'q23',dur:8,title:'③ Q2、Q3 导通 · 10–18 μs',note:'橙色原边：Vin 正端 → Q3 → B → 变压器原边（B 到 A）→ Q2 → Vin 负端。副边：O → 下半绕组 → W → D2 → K → L1，再分流至 R9 与 C1，经下母线返回 O。',remark:'Q2/Q3 ON，D2 导通，D1 截止；Vp≈−5 V，VL>0，L1 电流上升。'},
+  {id:'dead2',dur:2,title:'④ 第二次死区 · 18–20 μs',note:'四管全部 OFF。副边上半绕组/D1 与下半绕组/D2 两条续流通路同时显示；流经 K、L1 后分配至 R9 及 C1，再回到中心抽头 O。',remark:'与第一次死区相同的理想续流模型：D1、D2 共同续流，L1 电流下降。'}
+ ];
+ const btns=[...root.querySelectorAll('[data-stage-btn]')];
+ let idx=0;
+ function show(i){
+  idx=(i+phases.length)%phases.length;
+  const p=phases[idx];
+  root.dataset.stage=p.id;
+  btns.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.stageBtn===p.id)));
+  root.querySelector('#fb-phase').textContent=p.title;
+  root.querySelector('#fb-caption').textContent=p.title;
+  root.querySelector('#fb-description').textContent=p.note;
+  root.querySelector('#fb-remark').textContent=p.remark;
+ }
+ btns.forEach(b=>b.addEventListener('click',()=>show(phases.findIndex(p=>p.id===b.dataset.stageBtn))));
+ show(0);
+})();
+</script>
+</body></html>
